@@ -1,7 +1,7 @@
 ---
 title: "MechaCarChallenge"
 author: "Ray Whelan"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
