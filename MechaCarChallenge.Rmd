@@ -1,0 +1,101 @@
+---
+title: "MechaCarChallenge"
+author: "Ray Whelan"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+```
+
+## MPG Regession
+```{r, message=F, warning=F, comment=NA, echo=T }
+#Load the Mecha Car data
+mecha_mpg <- read.csv(file='MechaCar_mpg.csv',check.names=F,stringsAsFactors = F)
+
+#Print out a Covariance matrix
+mpg_matrix <-as.matrix(mecha_mpg[,c("vehicle_length", "vehicle_weight", "spoiler_angle", "ground_clearance", "AWD", "mpg")])
+cor(mpg_matrix)
+```
+The above correlation matrix shows us that two of our five independent variables have an outsized impact on our dependent variables, the prototypes fuel economy ('mpg'): vehicle length and ground clearance. The former alone has 60% correlation while the latter has 32% correlation. Thus these two variables should be our strongest predictors in the multiple linear regression we will run in the next step.
+
+```{r, message=F, warning=F, comment=NA, echo=T }
+#Create our multiple linear regression model and print out the summary table
+mecha_multi <- lm(mpg~ vehicle_length + vehicle_weight + spoiler_angle + ground_clearance + AWD, data=mecha_mpg)
+summary(mecha_multi)
+```
+
+From the above code we can see two variables aside from the intercept have a statistically significant impact on the car's MPG: vehicle length and ground clearance (as denoted by the asterisks). The model estimates that each additional unit of vehicle length increases the car's fuel economy by 6.2 mpg and each additional unit of ground clearance increases fuel economy by 3.5 mpg.
+
+With an R-squared value of ~.7, we can confirm that this model is an effective predictor of prototype mpg as the five dependent variables in our model can combined account for 70% of the variance in our dependent variable. Thus, this model will prove useful to Autos'R'Us's engineers in maximizing fuel efficiency.
+
+```{r, message=F, warning=F, comment=NA, echo=T }
+mecha_length<-lm(mpg~vehicle_length, data=mecha_mpg)
+summary(mecha_length)
+yvals <- mecha_length$coefficients['vehicle_length']*mecha_mpg$vehicle_length + mecha_length$coefficients['(Intercept)']
+
+plt <- ggplot(mecha_mpg,aes(x=vehicle_length,y=mpg))
+yvals
+plt + geom_point()  + geom_line(aes(y=yvals), color = "red")
+```
+
+To further prove the point of our model's effectiveness, the above plot of mpg against vehicle length shows graphically what we have confirmed already that there is strong positive correlation between the two variables.
+
+## Suspension Coil Summary
+
+
+```{r, message=F, warning=F, comment=NA, echo=T }
+#Read in the suspension coil data
+susp <- read.csv(file='Suspension_Coil.csv',check.names=F,stringsAsFactors = F)
+
+susp_sum <- susp %>%
+  group_by(Manufacturing_Lot) %>%
+  summarize(Mean_PSI= mean(PSI),Median_PSI= median(PSI),Variance_PSI= var(PSI), StdDev_PSI= sd(PSI))
+
+susp_sum
+
+```
+
+Our supension coil summary table shows us there is significant difference in the quality control of the three lots of suspension coils. Our first lost is highly controlled with almost negligible variance from our mean of 1500 PSI. The second lot shows more variance but is still well within our variance tolerance of 100 PSI. Meanwhile our third lot shows significantly higher variance, exceeding our control variance tolerance at 170 PSI. This lot should be discarded and the manufacturing process investigated to determine the causes of the drop in quality control.
+
+## Suspension Coil T-Test
+```{r, message=F, warning=F, comment=NA, echo=T }
+#Run T-Test for the whole sample group against the expected mean of 1500 PSI
+t.test(susp$PSI, mu = 1500)
+
+```
+The above t-test shows that we can not with certainty reject the null hypothesis there is no statistical difference between our sample mean and our population mean. The p-value is both too high at .06 and our 95% confidence interval just barely extends past our expected mean. However, given the variance we saw between lots, it would be wise to break our data set down by lot and run a t-test on each one. 
+
+
+```{r, message=F, warning=F, comment=NA, echo=T }
+#Subset our dataset by lot number
+Lot1 <- susp %>%
+  subset(Manufacturing_Lot == "Lot1", select = PSI)
+
+Lot2 <- susp %>%
+  subset(Manufacturing_Lot == "Lot2", select = PSI)
+
+Lot3 <- susp %>%
+  subset(Manufacturing_Lot == "Lot3", select = PSI)
+
+#Run T-Test for each lot against the expected mean of 1500 PSI
+t.test(Lot1$PSI, mu = 1500)
+
+t.test(Lot2$PSI, mu = 1500)
+
+t.test(Lot3$PSI, mu = 1500)
+```
+
+The above t-tests confirm that our first and second lot means are statistically identical to our expected mean of 1500 PSI. However, we can confirm with greater than 95% certainty that our third lot's variance from our expected mean is statistically significant with a greater than 95% confidence.
+
+## Self Designed Study
+
+One potential area of inquiry Autos'R'Us should explore to test the MechaCar prototype against the current market selection is to test how well new vehicle model sales perform against how similar they are to other offerings already on the market. In other words, will customers buy a new model of car just because it's new or does it have to be substantially different in size, capactiy, form factor, performance, etc. from other market offerings in order to generate positive sales? By testing this, Autos'R'Us can determine whether the market's needs are being met by current market offerings or if the market demands innovation, providing incentive for Autos'R'Us to take greater risks with the MechaCar prototype.
+
+In order to test this, Autos'R'Us should sort recent vehicle model launches into two classes, "similar to current market offerings" and "unique new offerings". Because this is a dichotomous class, the study analysts will have to, perhaps somewhat arbitrarily, determine how different a car needs to be to fall into the latter category, but for example, a four door economy sedan would fall into the former while a high-performance SUV might fall into the ladder. Once again, there will need to be man judgment calls made here and the model may need to be tweaked with different categorizing criteria.
+
+Once our categories have been set, a series of multiple linear regressions should be run with several control criteria (e.g. cost, mpg, number of seats, etc.), or independent dichotomous variable, and several different sales performance statistics such as: first year sales as a percentage of total vehicle sales, 5-year average sales percentage, and the difference between the first year sales and 5 year average. The first will tell us if new car sales perform better or worse when the car is unique to the market, and the second two will tell us how much holding power more unique offerings have relative to tried and true car models once their novelty has worn off and customers have decided whether or not the car fills a legitimate market niche.
+
+Autos'R'Us will need to determine from the p-values of the slopes of our dichotomous variable on our outcome variables whether or nt there is any statistically significant effect and what to infer from the information they provide. The null hypothesis would be that the uniqueness of the car has no effect on sales performance, while the alternative hypothesis is that the uniqueness effects sales performance one way or the other.
